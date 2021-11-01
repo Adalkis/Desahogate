@@ -1,8 +1,7 @@
 <template>
  
  <div  >
-
-   <dashboard-component></dashboard-component>
+  <dashboard-component></dashboard-component>
    
  </div>
 </template>

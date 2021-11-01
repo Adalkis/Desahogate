@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use Illuminate\Support\Facades\Auth;
 
 
 use Illuminate\Http\Request;
@@ -22,17 +23,17 @@ class postController extends Controller
    public function postData(Request $request){
        $post = new Post();
        $post->post_name=$request->input('post_name');
-       $post->user_id=$request->input('user_id');
+       $post->user_id=Auth::id();
        $post->save();
        return $post;
    }
 
    public function postComment(Request $request){
        $comment = new Comments();
-       $comment->username=$request->input('username');
+       $comment->username=Auth::user()->name;
        $comment->comment=$request->input('comment');
        $comment->post_id=$request->input('post_id');
-       $comment->user_id=$request->input('user_id');
+       $comment->user_id=Auth::id();
        $comment->save();
        return $comment;
    }

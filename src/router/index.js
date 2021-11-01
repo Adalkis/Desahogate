@@ -12,31 +12,17 @@ const routes = [
     path: '/',
     name: 'Home',
     component: () => import(/* webpackChunkName: "home" */ '../views/Home.vue'),
-    meta:{auth:true},
+    // meta:{auth:true},
     props:true
   },
   {
     path: '/login',
     name: 'Login',
     component: () => import(/* webpackChunkName: "login" */ '../views/Login.vue'),
-    meta:{auth:false}
+    meta:{auth:true}
    
   },
-  {
-    path: '/mypost',
-    name: 'MyPost',
-    component: () => import(/* webpackChunkName: "mypost" */ '../views/MyPost.vue'),
-    meta:{auth:true}
-  },
-  {
-    path: '/profile/:username?:id?/',
-    name: 'Profile',
-    params:true,
-    props:true,
-    component: ()=> import(/* webpackChunkName: "profile" */ "../views/Profile.vue"),
-    meta:{auth:true},
-    
-  },
+  
   
 ]
 
@@ -48,10 +34,7 @@ const router = new VueRouter({
 });
 router.beforeEach((to,from,next)=>{
  
-   if(to.name !=='Login' && !store.state.isAuthenticated){
-     next({name:'Login'});
-   }
-   if(to.name == 'Login' && store.state.isAuthenticated){
+   if(to.name == 'Login' && store.state.login.isLoggedIn){
      next({name:'Home'});
    }
    else{

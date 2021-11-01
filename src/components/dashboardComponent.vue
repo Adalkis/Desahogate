@@ -1,43 +1,23 @@
 <template>
-  <div class="container">
-   
-
-    
+  <div class="container" >
+    <div v-if="this.$store.state.login.isLoggedIn">
     <b-form-textarea
       class="mt-5"
       placeholder="Comparte tu historia"
       v-model="text.post_name"
     ></b-form-textarea>
-    <b-button class="mt-2 mb-2" variant="outline-primary" @click="share"
-      ><b-spinner variant="primary" small v-if="spinner == true"></b-spinner>Compartir</b-button
-    >
-    
 
+      <b-button class="mt-2 mb-2" variant="outline-primary" @click="share"
+        ><b-spinner variant="primary" small v-if="spinner == true"></b-spinner
+        >Compartir</b-button
+      >
+      </div>
     <div v-for="(post, index) in all_post" :key="index" class="mb-3">
       <b-card>
         <b-card-body>
           <div class="post_content">
-            <router-link
-              class="text-dark"
-              @click.native="profile(post.users.id)"
-              :to="{
-                name: 'Profile',
-                params: {
-                  
-                  id: post.users.id,
-                  username: post.users.name,
-                   post: total_post,
-                  data: post.users,
-                  total: result_total_post,
-                 
-                  user_id: text.user_id,
-                }
-              }"
-              >{{post.users.name }} </router-link
-            >
-
+              <h6>{{ post.users.name }}</h6>
             <p class="post_name text-dark">{{ post.post_name }}</p>
-           
           </div>
 
           <hr />
@@ -45,26 +25,12 @@
             class="content_section mb-3 px-3"
             v-for="(comment_post, comment) in post.comments"
             :key="comment"
-            v-if="see_comments == true && index == index_post"
+           
           >
-            <router-link
-              @click.native="profile(comment_post.user_id)"
-              :to="{
-                name: 'Profile',
-                params: {
-                  id: comment_post.user_id,
-                  username: comment_post.username,
-                  total: result_total_post,
-                  post: total_post,
-                  user_id: text.user_id,
-                 
-                },
-              }"
-            >
-            
-              <p>{{ comment_post.username }}  </p></router-link
-            >
+          <div  v-if="see_comments == true && index == index_post">
+              <span>{{ comment_post.username }}</span>
             <p>{{ comment_post.comment }}</p>
+            </div>
           </div>
 
           <div class="comment_button">
@@ -77,34 +43,27 @@
             </b-button>
           </div>
         </b-card-body>
-
+        <div v-if="isAuthenticated">
         <b-form-input
           placeholder="Comentar"
           @keyup.enter="submitComment(post.id, $event)"
         >
         </b-form-input>
+        </div>
       </b-card>
     </div>
-  
   </div>
 </template>
  
 <script>
-import postApi from "@/api/post.js";
-import getPostApi from "@/api/getPost.js";
-import authenticatedUserApi from "@/api/auth/authenticatedUser.js";
-import commentApi from "@/api/postComment.js";
-import sideBarComponent from "./sideBar.vue";
+import postApi from "../api/post/post"
+import authApi from "../api/auth/auth";
 
 export default {
-  components: { sideBarComponent },
   data() {
     return {
       text: {
         post_name: "",
-        user_id: null,
-        users: { name: ""},
-        comments: 0,
       },
       all_post: [],
       result: [],
@@ -113,22 +72,22 @@ export default {
       index_post: null,
       total_post: [],
       result_total_post: null,
-      spinner:false
+      spinner: false,
+      currentUser: this.$store.state.login.user.name,
     };
   },
   methods: {
     share() {
-      this.spinner=true;
-      postApi
-        .postData(this.text)
+      this.spinner = true;
+      postApi.post(this.text)
         .then((res) => {
           this.all_post.unshift({
-            users: { name: this.text.users.name },
+            users: { name: this.currentUser },
             post_name: this.text.post_name,
             comments: 0,
           });
           this.text.post_name = "";
-          this.spinner=false;
+          this.spinner = false;
         })
         .catch((err) => console.log(err));
     },
@@ -136,18 +95,17 @@ export default {
       let index = this.all_post.findIndex((x) => {
         return x.id == id;
       });
-
       let comment = {
         comment: event.target.value,
         post_id: id,
-        username: this.username,
-        user_id: this.text.user_id,
       };
-    
-      commentApi.commentPost(comment).then((res) => {
+      console.log('esto es comment')
+      console.log(comment)
+
+      postApi.commentPost(comment).then((res) => {
         this.all_post[index].comments.unshift({
           comment: res.data.comment,
-          username: res.data.username,
+          username: this.currentUser,
         });
         event.target.value = "";
       });
@@ -155,44 +113,23 @@ export default {
     display_comments(index) {
       this.see_comments = true;
       this.index_post = index;
-     
     },
-    profile(id) {
-     
-      
-      this.all_post.map((x) => {
-        let result = x.user_id == id;
-   
-        if (result) {
-          
-          this.total_post.push(x);
-         
-        }
-      });
-      this.result_total_post = this.total_post.length;
-     
+  },
+  computed: {
+    isAuthenticated() {
+      return this.$store.state.login.isLoggedIn;
     },
   },
   mounted: async function () {
-    await getPostApi
-      .getPost()
+    await postApi.getPost()
       .then((res) => {
         this.all_post = res.data;
       })
       .catch((err) => console.log(err));
-
-    await authenticatedUserApi
-      .authenticated()
-      .then((res) => {
-        this.text.user_id = res.data.id;
-        this.username = res.data.name;
-        this.lastname =  res.data.lastname
-        this.text.users.name = res.data.name;
-      })
-      .catch((err) => console.log(err));
+    await authApi.authenticated().then((res) => {
+      this.$store.dispatch("SETAUTH", true);
+    });
   },
-  
- 
 };
 </script>
 
@@ -203,12 +140,27 @@ hr:not([size]) {
 .post_content {
   text-align: start;
 }
+.post_content h6 {
+    text-decoration: underline;
+    cursor:pointer;
+}
+.content_section.mb-3.px-3 div span {
+    text-decoration: underline;
+     cursor:pointer;
+}
+.content_section.mb-3.px-3 div span:hover {
+    text-decoration: underline;
+     color:#0063cf;
+}
+.post_content h6:hover{
+    color:#0063cf;
+}
 .comment_button {
   display: flex;
   justify-content: flex-start;
 }
 .content_section {
-  background: #eff6f5;
+  background: #f0f2f5;
   border-radius: 10px;
   text-align: start;
 }

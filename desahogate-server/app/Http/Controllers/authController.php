@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class authController extends Controller
 {
@@ -29,15 +30,19 @@ class authController extends Controller
             $minutes= 60 * 24;
             $cookie= Cookie::make('jwt', "$token", $minutes);
             return response()->json([
-                'message'=>$token
+                'user' => Auth::user()
             ])->withCookie($cookie);
+       
         }
-        else{
-            return 'Login credentials are not valid';
-        }
+        return  back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ]);
 
     }
     public function authenticatedUser(){
+        // return response()->json([
+        //     "user"=> Auth::user()
+        // ]);
         return Auth::user();
     }
 
